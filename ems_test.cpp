@@ -48,12 +48,12 @@ void on_atom_collision(const AtomCollision& e, Dispatcher& d)
     const auto [aposx, aposy] = e.first.position;
     const auto [bposx, bposy] = e.second.position;
     const auto blast_force = std::powf(e.first.radius * e.second.radius, 2);
-    d.send(ExplosionEvent{
+    d.post(ExplosionEvent{
         .blast_force = blast_force,
         .position = Vec2{(aposx + bposx) / 2, (aposy + bposy) / 2},
     });
     if (blast_force > 10'000) {
-        d.send(WipeoutEvent{.destruction_rate = blast_force / 1e8f});
+        d.post(WipeoutEvent{.destruction_rate = blast_force / 1e8f});
     }
 }
 
@@ -83,13 +83,14 @@ int main()
         std::tuple<AtomCollision, ExplosionEvent, WipeoutEvent>;
     ems::dispatcher<event_registry> dispatcher{};
     auto on_atom_collision_wrapper = [&dispatcher](auto&& e) {
-        return on_atom_collision(e, dispatcher);
+      return on_atom_collision(e, dispatcher);
     };
-    dispatcher.subscribe<AtomCollision>(on_atom_collision_wrapper);
-    dispatcher.subscribe<ExplosionEvent>(&explode);
     Atom atom1{.position = {130, 150}, .radius = 62.5};
     Atom atom2{.position = {120, 160}, .radius = 200};
     World w;
-    dispatcher.subscribe<WipeoutEvent, &World::wipeout>(w);
-    dispatcher.send(AtomCollision{atom1, atom2});
+
+    dispatcher.add<AtomCollision>(on_atom_collision_wrapper);
+    dispatcher.add<ExplosionEvent>(&explode);
+    dispatcher.add<WipeoutEvent, &World::wipeout>(w);
+    dispatcher.post(AtomCollision{atom1, atom2});
 }

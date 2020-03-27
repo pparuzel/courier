@@ -35,7 +35,7 @@ public:
     template <typename... Args>
     constexpr void trigger(Args&&... args) const
     {
-        // TODO: mutable lambdas don't work here cause of `const`
+        // TODO: Do mutable lambdas work here despite `const`?
         for (auto&& listener : std::as_const(listeners_)) {
             listener(std::forward<Args>(args)...);
         }
@@ -55,7 +55,7 @@ public:
     constexpr dispatcher_impl() = default;
 
     template <typename TEvent, typename F>
-    constexpr void subscribe(F&& f) noexcept
+    constexpr void add(F&& f) noexcept
     {
         static_assert(detail::tuple_contains_type_v<sender<TEvent>,
                                                     decltype(event_senders_)>,
@@ -64,17 +64,17 @@ public:
     }
 
     template <typename TEvent, auto MemberFunc, typename Object>
-    constexpr void subscribe(Object&& o) noexcept
+    constexpr void add(Object&& f) noexcept
     {
         static_assert(detail::tuple_contains_type_v<sender<TEvent>,
                                                     decltype(event_senders_)>,
                       "Cannot subscribe to an unregistered event");
         get_sender<TEvent>().template add_listener(
-            [&](const TEvent& e) { (o.*MemberFunc)(e); });
+            [&](const TEvent& e) { (f.*MemberFunc)(e); });
     }
 
     template <typename TEvent>
-    constexpr void send(const TEvent& event) const
+    constexpr void post(const TEvent& event) const
     {
         if constexpr (detail::tuple_contains_type_v<sender<TEvent>,
                                                     decltype(event_senders_)>) {

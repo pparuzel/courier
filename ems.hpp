@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <tuple>
 #include <vector>
 
@@ -12,22 +13,23 @@ template <typename TEvent>
 class sender
 {
 public:
-    template <void (*F)(const TEvent&)>
-    constexpr void add_listener() noexcept
+    template <typename F>
+    constexpr void add_listener(F&& f) noexcept
     {
-        listeners_.push_back(F);
+        listeners_.emplace_back(std::forward<F>(f));
     }
 
     template <typename... Args>
     constexpr void trigger(Args&&... args) const
     {
+        // TODO: mutable lambdas don't work here cause of `const`
         for (auto&& listener : std::as_const(listeners_)) {
             listener(std::forward<Args>(args)...);
         }
     }
 
 private:
-    std::vector<void (*)(const TEvent&)> listeners_;
+    std::vector<std::function<void(const TEvent&)>> listeners_;
 };
 
 template <typename... E>
@@ -39,10 +41,10 @@ public:
 
     constexpr dispatcher() = default;
 
-    template <typename TEvent, void (*F)(const TEvent&)>
-    constexpr void subscribe() noexcept
+    template <typename TEvent, typename F>
+    constexpr void subscribe(F&& f) noexcept
     {
-        get_sender<TEvent>().template add_listener<F>();
+        get_sender<TEvent>().template add_listener<F>(std::forward<F>(f));
     }
 
     template <typename TEvent>

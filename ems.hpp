@@ -1,14 +1,27 @@
 #pragma once
 
 #include <functional>
+#include <iostream>
 #include <tuple>
 #include <vector>
 
+namespace ems::detail
+{
+template <typename T, typename Tuple>
+struct tuple_contains_type;
+
+template <typename T, typename... Other>
+struct tuple_contains_type<T, std::tuple<Other...>>
+    : std::disjunction<std::is_same<T, Other>...> {
+};
+
+template <typename T, typename Tuple>
+inline constexpr bool tuple_contains_type_v =
+    tuple_contains_type<T, Tuple>::value;
+}  // namespace ems::detail
+
 namespace ems
 {
-/**
- *
- */
 template <typename TEvent>
 class sender
 {
@@ -33,24 +46,35 @@ private:
 };
 
 template <typename... E>
-class dispatcher
+class dispatcher_impl
 {
 public:
     static_assert(sizeof...(E) > 0,
                   "ems::dispatcher requires event types to be more than zero");
 
-    constexpr dispatcher() = default;
+    constexpr dispatcher_impl() = default;
 
     template <typename TEvent, typename F>
     constexpr void subscribe(F&& f) noexcept
     {
+        static_assert(detail::tuple_contains_type_v<sender<TEvent>,
+                                                    decltype(event_senders_)>,
+                      "Cannot subscribe to an unregistered event");
         get_sender<TEvent>().template add_listener<F>(std::forward<F>(f));
     }
 
     template <typename TEvent>
     constexpr void send(const TEvent& event) const
     {
-        get_sender<TEvent>().trigger(event);
+        if constexpr (detail::tuple_contains_type_v<sender<TEvent>,
+                                                    decltype(event_senders_)>) {
+            get_sender<TEvent>().trigger(event);
+        } else {
+#ifndef DISABLE_RTTI
+            std::cerr << "warning: type id '" << typeid(TEvent).name()
+                      << "' is not a registered type." << std::endl;
+#endif
+        }
     }
 
 private:
@@ -69,6 +93,16 @@ private:
 
 private:
     std::tuple<sender<E>...> event_senders_{};
+};
+
+template <typename... E>
+class dispatcher : public dispatcher_impl<E...>
+{
+};
+
+template <typename... E>
+class dispatcher<std::tuple<E...>> : public dispatcher_impl<E...>
+{
 };
 
 }  // namespace ems

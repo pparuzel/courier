@@ -14,7 +14,7 @@ struct Vec2 {
     }
 };
 
-struct AxisAlignedBoundingBox {
+struct AABBox {
     Vec2 position;
     Vec2 size;
 };
@@ -27,12 +27,14 @@ struct CollisionEvent : public std::pair<T1, T2> {
     }
 };
 
-using BoxCollisionEvent =
-    CollisionEvent<AxisAlignedBoundingBox, AxisAlignedBoundingBox>;
+using BoxCollisionEvent = CollisionEvent<AABBox, AABBox>;
 
 struct ExplosionEvent {
     float blast_force;
     Vec2 position;
+};
+
+struct WipeoutEvent {
 };
 
 template <typename Dispatcher>
@@ -45,10 +47,14 @@ void on_aabb_collision(const BoxCollisionEvent& e, Dispatcher& d)
     const auto [bw, bh] = e.second.size;
     const auto [aposx, aposy] = e.first.position;
     const auto [bposx, bposy] = e.second.position;
+    const auto blast_force = std::hypot(aw, ah) * std::hypot(bw, bh);
     d.send(ExplosionEvent{
-        .blast_force = std::hypot(aw, ah) * std::hypot(bw, bh),
+        .blast_force = blast_force,
         .position = Vec2{(aposx + bposx) / 2, (aposy + bposy) / 2},
     });
+    if (blast_force > 10'000) {
+        d.send(WipeoutEvent{});
+    }
 }
 
 void explode(const ExplosionEvent& e)
@@ -57,14 +63,23 @@ void explode(const ExplosionEvent& e)
               << e.blast_force << " newtons of force." << std::endl;
 }
 
+void wipeout(const WipeoutEvent& e)
+{
+    std::cout << "The whole humanity is being wiped out due to a large blast."
+              << std::endl;
+}
+
 int main()
 {
-    ems::dispatcher<BoxCollisionEvent, ExplosionEvent> d{};
-    auto on_aabb_collision_wrap = [&d](const BoxCollisionEvent& e) {
-        return on_aabb_collision(e, d);
+    using event_registry =
+        std::tuple<BoxCollisionEvent, ExplosionEvent, WipeoutEvent>;
+    ems::dispatcher<event_registry> dispatcher{};
+    auto on_aabb_collision_wrap = [&dispatcher](auto&& e) {
+        return on_aabb_collision(e, dispatcher);
     };
-    d.subscribe<BoxCollisionEvent>(on_aabb_collision_wrap);
-    d.subscribe<ExplosionEvent>(&explode);
-    AxisAlignedBoundingBox box{.position = {130, 150}, .size = {50, 100}};
-    d.send(BoxCollisionEvent{box, box});
+    dispatcher.subscribe<BoxCollisionEvent>(on_aabb_collision_wrap);
+    dispatcher.subscribe<ExplosionEvent>(&explode);
+    AABBox box{.position = {130, 150}, .size = {50, 100}};
+    dispatcher.subscribe<WipeoutEvent>(&wipeout);
+    dispatcher.send(BoxCollisionEvent{box, box});
 }

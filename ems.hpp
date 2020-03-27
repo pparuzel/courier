@@ -63,6 +63,16 @@ public:
         get_sender<TEvent>().template add_listener<F>(std::forward<F>(f));
     }
 
+    template <typename TEvent, auto MemberFunc, typename Object>
+    constexpr void subscribe(Object&& o) noexcept
+    {
+        static_assert(detail::tuple_contains_type_v<sender<TEvent>,
+                                                    decltype(event_senders_)>,
+                      "Cannot subscribe to an unregistered event");
+        get_sender<TEvent>().template add_listener(
+            [&](const TEvent& e) { (o.*MemberFunc)(e); });
+    }
+
     template <typename TEvent>
     constexpr void send(const TEvent& event) const
     {

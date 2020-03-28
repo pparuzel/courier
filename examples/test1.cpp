@@ -1,7 +1,7 @@
-#include "ems.hpp"
-
 #include <cmath>
 #include <iostream>
+
+#include "ems/ems.hpp"
 
 struct Vec2 {
     float x;

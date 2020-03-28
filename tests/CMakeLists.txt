@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(EMS)
+project(EMS_Tests)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -9,5 +9,6 @@ if(NOT DEFINED EMS_DIR)
 endif()
 
 include_directories(${EMS_DIR}/include)
+include_directories(Catch2/single_include/catch2)
 
-add_executable(example1 example1.cpp ${EMS_DIR}/include/ems/ems.hpp)
+add_executable(testcase_1 basic_functionality.cpp)

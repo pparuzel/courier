@@ -83,7 +83,7 @@ int main()
         std::tuple<AtomCollision, ExplosionEvent, WipeoutEvent>;
     ems::dispatcher<event_registry> dispatcher{};
     auto on_atom_collision_wrapper = [&dispatcher](auto&& e) {
-      return on_atom_collision(e, dispatcher);
+        return on_atom_collision(e, dispatcher);
     };
     Atom atom1{.position = {130, 150}, .radius = 62.5};
     Atom atom2{.position = {120, 160}, .radius = 200};
@@ -91,6 +91,8 @@ int main()
 
     dispatcher.add<AtomCollision>(on_atom_collision_wrapper);
     dispatcher.add<ExplosionEvent>(&explode);
-    dispatcher.add<WipeoutEvent, &World::wipeout>(w);
-    dispatcher.post(AtomCollision{atom1, atom2});
+    auto wipeout_callback = dispatcher.add<WipeoutEvent, &World::wipeout>(w);
+    dispatcher.post(CollisionEvent{atom1, atom2});
+    dispatcher.post(Vec2{1, 2});
+    dispatcher.remove(wipeout_callback);
 }

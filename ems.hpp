@@ -1,9 +1,10 @@
 #pragma once
 
+#include <forward_list>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <tuple>
-#include <vector>
 
 namespace ems::detail
 {
@@ -18,18 +19,34 @@ struct tuple_contains_type<T, std::tuple<Other...>>
 template <typename T, typename Tuple>
 inline constexpr bool tuple_contains_type_v =
     tuple_contains_type<T, Tuple>::value;
+
+template <typename T>
+using callback_t = std::function<void(const T&)>;
+
+template <typename T>
+using callback_ptr = std::unique_ptr<callback_t<T>>;
+
 }  // namespace ems::detail
 
 namespace ems
 {
 template <typename TEvent>
-class sender
+class poster
 {
 public:
     template <typename F>
-    constexpr void add_listener(F&& f) noexcept
+    constexpr auto add_listener(F&& func) noexcept
     {
-        listeners_.emplace_back(std::forward<F>(f));
+        return listeners_
+            .emplace_front(std::make_unique<detail::callback_t<TEvent>>(
+                std::forward<F>(func)))
+            .get();
+    }
+
+    constexpr void remove_listener(detail::callback_t<TEvent>* ptr) noexcept
+    {
+        listeners_.remove_if(
+            [ptr](const auto& callback) { return ptr == callback.get(); });
     }
 
     template <typename... Args>
@@ -37,12 +54,12 @@ public:
     {
         // TODO: Do mutable lambdas work here despite `const`?
         for (auto&& listener : std::as_const(listeners_)) {
-            listener(std::forward<Args>(args)...);
+            (*listener)(std::forward<Args>(args)...);
         }
     }
 
 private:
-    std::vector<std::function<void(const TEvent&)>> listeners_;
+    std::forward_list<detail::callback_ptr<TEvent>> listeners_;
 };
 
 template <typename... E>
@@ -55,54 +72,65 @@ public:
     constexpr dispatcher_impl() = default;
 
     template <typename TEvent, typename F>
-    constexpr void add(F&& f) noexcept
+    constexpr decltype(auto) add(F&& func) noexcept
     {
-        static_assert(detail::tuple_contains_type_v<sender<TEvent>,
+        static_assert(detail::tuple_contains_type_v<poster<TEvent>,
                                                     decltype(event_senders_)>,
-                      "Cannot subscribe to an unregistered event");
-        get_sender<TEvent>().template add_listener<F>(std::forward<F>(f));
+                      "Cannot register to an unspecified event");
+        return get_poster<TEvent>().template add_listener<F>(
+            std::forward<F>(func));
     }
 
     template <typename TEvent, auto MemberFunc, typename Object>
-    constexpr void add(Object&& f) noexcept
+    constexpr decltype(auto) add(Object&& f) noexcept
     {
-        static_assert(detail::tuple_contains_type_v<sender<TEvent>,
+        static_assert(detail::tuple_contains_type_v<poster<TEvent>,
                                                     decltype(event_senders_)>,
-                      "Cannot subscribe to an unregistered event");
-        get_sender<TEvent>().template add_listener(
+                      "Cannot register to an unspecified event");
+        return get_poster<TEvent>().template add_listener(
             [&](const TEvent& e) { (f.*MemberFunc)(e); });
+    }
+
+    template <typename TEvent>
+    constexpr void remove(detail::callback_t<TEvent>* ptr) noexcept
+    {
+        static_assert(detail::tuple_contains_type_v<poster<TEvent>,
+                                                    decltype(event_senders_)>,
+                      "Cannot remove an unspecified event");
+        get_poster<TEvent>().remove_listener(ptr);
     }
 
     template <typename TEvent>
     constexpr void post(const TEvent& event) const
     {
-        if constexpr (detail::tuple_contains_type_v<sender<TEvent>,
+        if constexpr (detail::tuple_contains_type_v<poster<TEvent>,
                                                     decltype(event_senders_)>) {
-            get_sender<TEvent>().trigger(event);
+            get_poster<TEvent>().trigger(event);
         } else {
-#ifndef DISABLE_RTTI
-            std::cerr << "warning: type id '" << typeid(TEvent).name()
-                      << "' is not a registered type." << std::endl;
+            std::cerr << "warning: a used type "
+#ifndef RTTI_DISABLED
+                      << "id '" << typeid(TEvent).name() << "' "
 #endif
+                      << "is not specified in the dispatcher." << std::endl;
         }
     }
 
 private:
     template <typename TEvent>
-    constexpr const auto& get_sender() const noexcept
+    constexpr const auto& get_poster() const noexcept
     {
-        return std::get<sender<TEvent>>(event_senders_);
+        return std::get<poster<TEvent>>(event_senders_);
     }
 
     template <typename TEvent>
-    constexpr auto& get_sender() noexcept
+    constexpr auto& get_poster() noexcept
     {
-        return const_cast<sender<TEvent>&>(
-            std::as_const(*this).template get_sender<TEvent>());
+        return const_cast<poster<TEvent>&>(
+            std::as_const(*this).template get_poster<TEvent>());
     }
 
 private:
-    std::tuple<sender<E>...> event_senders_{};
+    std::tuple<poster<E>...> event_senders_{};
 };
 
 template <typename... E>

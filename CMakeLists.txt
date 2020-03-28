@@ -4,5 +4,4 @@ project(EMS)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(DYEMS dynamic_ems_test.cpp dynamic_ems.hpp)
 add_executable(EMS ems_test.cpp ems.hpp)

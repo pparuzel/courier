@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "catch.hpp"
-#include "ems/ems.hpp"
+#include "ebus/ebus.hpp"
 
 struct Event1 {
     int i;
@@ -25,7 +25,7 @@ struct Event4 : Event2 {
 TEST_CASE("Basic functionality", "[basic]")
 {
     using events = std::tuple<Event1, Event2>;
-    ems::dispatcher<events> dispatcher;
+    ebus::dispatcher<events> dispatcher;
 
     SECTION("assigning an event to a lambda")
     {

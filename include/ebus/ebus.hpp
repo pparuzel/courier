@@ -6,7 +6,7 @@
 #include <memory>
 #include <tuple>
 
-namespace ems::detail
+namespace ebus::detail
 {
 template <typename T, typename Tuple>
 struct tuple_contains_type;
@@ -26,9 +26,9 @@ using callback_t = std::function<void(const T&)>;
 template <typename T>
 using callback_ptr = std::unique_ptr<callback_t<T>>;
 
-}  // namespace ems::detail
+}  // namespace ebus::detail
 
-namespace ems
+namespace ebus
 {
 template <typename TEvent>
 class poster
@@ -67,7 +67,7 @@ class dispatcher_impl
 {
 public:
     static_assert(sizeof...(E) > 0,
-                  "ems::dispatcher requires event types to be more than zero");
+                  "ebus::dispatcher requires event types to be more than zero");
 
     constexpr dispatcher_impl() = default;
 
@@ -143,4 +143,4 @@ class dispatcher<std::tuple<E...>> : public dispatcher_impl<E...>
 {
 };
 
-}  // namespace ems
+}  // namespace ebus

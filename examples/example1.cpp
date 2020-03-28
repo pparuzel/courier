@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "ems/ems.hpp"
+#include "ebus/ebus.hpp"
 
 struct Vec2 {
     float x;
@@ -81,7 +81,7 @@ int main()
 {
     using event_registry =
         std::tuple<AtomCollision, ExplosionEvent, WipeoutEvent>;
-    ems::dispatcher<event_registry> dispatcher{};
+    ebus::dispatcher<event_registry> dispatcher{};
     auto on_atom_collision_wrapper = [&dispatcher](auto&& e) {
         return on_atom_collision(e, dispatcher);
     };

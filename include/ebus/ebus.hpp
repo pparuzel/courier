@@ -34,6 +34,8 @@ template <typename TEvent>
 class poster
 {
 public:
+    constexpr poster() = default;
+
     template <typename F>
     constexpr auto add_listener(F&& func) noexcept
     {

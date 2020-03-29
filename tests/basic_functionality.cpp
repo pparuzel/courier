@@ -14,19 +14,74 @@ struct Event1 {
 };
 
 struct Event2 {
+    mutable std::size_t trigger_count = 0;
 };
 
 struct Event3 {
+    mutable std::size_t trigger_count = 0;
 };
 
 struct Event4 : Event2 {
 };
 
+void foo(const Event2& e)
+{
+    ++e.trigger_count;
+}
+
 TEST_CASE("Basic functionality", "[basic]")
 {
+    SECTION("assigning an event to a regular function")
+    {
+        ebus::dispatcher<Event4> dp;
+        Event4 event{};
+        // Set trigger count to 1 to distinguish from the default 0
+        event.trigger_count = 1;
+        dp.add<Event4>(foo);
+        REQUIRE(event.trigger_count == 1);
+        SECTION("but then posting a different event")
+        {
+            SECTION("which is the base class of the registered event")
+            {
+                Catch::RedirectedStdErr redirected_std_err{};
+                dp.post(static_cast<const Event2&>(event));
+                REQUIRE(event.trigger_count == 1);
+                CHECK_THAT(redirected_std_err.str(),
+                           Catch::Matchers::StartsWith("warning"));
+            }
+            Catch::RedirectedStdErr redirected_std_err{};
+            dp.post(reinterpret_cast<const Event3&>(event));
+            REQUIRE(event.trigger_count == 1);
+            CHECK_THAT(redirected_std_err.str(),
+                       Catch::Matchers::StartsWith("warning"));
+        }
+        SECTION("and asserting the call happened once")
+        {
+            dp.post(event);
+            REQUIRE(event.trigger_count == 2);
+            SECTION("and asserting the call happened twice")
+            {
+                dp.post(event);
+                REQUIRE(event.trigger_count == 3);
+            }
+        }
+    }
     using events = std::tuple<Event1, Event2>;
     ebus::dispatcher<events> dispatcher;
-
+    SECTION("assigning an event to a stateful lambda")
+    {
+        auto value = 4;
+        dispatcher.add<Event1>([&, multiplier = 2.f](auto&& event) mutable {
+            multiplier *= 2;
+            value += event.i * 1000;
+            value += event.j * 100;
+            value += event.k * 10;
+            value *= multiplier;
+        });
+        REQUIRE(value == 4);
+        dispatcher.post(Event1{1, 2, 3});
+        REQUIRE(value == 1234 * 4);
+    }
     SECTION("assigning an event to a lambda")
     {
         auto event_triggered = false;
@@ -50,7 +105,7 @@ TEST_CASE("Basic functionality", "[basic]")
         bool events_triggered[3] = {false, false};
         dispatcher.add<Event1>([&](auto&&...) { events_triggered[0] = true; });
         dispatcher.add<Event2>([&](auto&&...) { events_triggered[1] = true; });
-        SECTION("but calling a third unspecified")
+        SECTION("but calling an unspecified third one")
         {
             SECTION("that is inheriting from a specified event")
             {

@@ -33,7 +33,7 @@ TEST_CASE("Basic functionality", "[basic]")
 {
     SECTION("assigning an event to a regular function")
     {
-        ebus::dispatcher<Event4> dp;
+        courier::dispatcher<Event4> dp;
         Event4 event{};
         // Set trigger count to 1 to distinguish from the default 0
         event.trigger_count = 1;
@@ -67,7 +67,7 @@ TEST_CASE("Basic functionality", "[basic]")
         }
     }
     using events = std::tuple<Event1, Event2>;
-    ebus::dispatcher<events> dispatcher;
+    courier::dispatcher<events> dispatcher;
     SECTION("assigning an event to a stateful lambda")
     {
         auto value = 4;

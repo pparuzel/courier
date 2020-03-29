@@ -81,7 +81,7 @@ int main()
 {
     using event_registry =
         std::tuple<AtomCollision, ExplosionEvent, WipeoutEvent>;
-    ebus::dispatcher<event_registry> dispatcher{};
+    courier::dispatcher<event_registry> dispatcher{};
     auto on_atom_collision_wrapper = [&dispatcher](auto&& e) {
         return on_atom_collision(e, dispatcher);
     };

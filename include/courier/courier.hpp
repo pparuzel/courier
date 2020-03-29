@@ -54,7 +54,6 @@ public:
     template <typename... Args>
     constexpr void trigger(Args&&... args) const
     {
-        // TODO: Do mutable lambdas work here despite `const`?
         for (auto&& listener : std::as_const(listeners_)) {
             (*listener)(std::forward<Args>(args)...);
         }
@@ -68,8 +67,9 @@ template <typename... E>
 class dispatcher_impl
 {
 public:
-    static_assert(sizeof...(E) > 0,
-                  "courier::dispatcher requires event types to be more than zero");
+    static_assert(
+        sizeof...(E) > 0,
+        "courier::dispatcher requires event types to be more than zero");
 
     constexpr dispatcher_impl() = default;
 

@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "catch.hpp"
-#include "ebus/ebus.hpp"
+#include "courier/courier.hpp"
 
 struct Event1 {
     int i;

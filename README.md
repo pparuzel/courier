@@ -2,10 +2,10 @@
 
 [![Build status](https://github.com/reconndev/courier/workflows/build/badge.svg)](https://github.com/reconndev/courier/actions)
 
-A simple, lightweight C++17 event bus/dispatcher.
+A simple, lightweight **C++17 event bus**/dispatcher.
 It allows communication components through subscription and events. A function is attached to a particular event and once a user posts an event, all subscribed functions are called.
 
-Event dispatchers are particularly popular in game development. Physics engine send an event about a collision between two entities and users of the engine can subscribe, to handle this event however they want without coupling with the physics engine code. Events may contain mutable data, courier permits any type to be sent as long as it is registered in the dispatcher.
+Event dispatchers are particularly popular in game development. Usually, physics engines send events about collisions between entities so that the users of the engine can subscribe, to handle them however they want without coupling game code with the physics engine code. Events may contain mutable data. `courier` permits any type to be sent as long as it is registered in the dispatcher.
 
 ## Tested on compilers
 * Linux CentOS x86-64, clang version 5.0.1

@@ -29,6 +29,10 @@ void foo(Event2& e)
     ++e.trigger_count;
 }
 
+///
+/// Basic functionality
+///
+
 TEST_CASE("Basic functionality", "[basic]")
 {
     SECTION("assigning an event to a regular function")
@@ -175,3 +179,33 @@ TEST_CASE("Basic functionality", "[basic]")
         }
     }
 }
+
+///
+/// Construction tests
+///
+
+TEST_CASE("Construction tests", "[basic]")
+{
+    SECTION("contruct dispatcher with a std::vector")
+    {
+        courier::dispatcher<std::vector<int>> d;
+        d.add<std::vector<int>>([](auto&& event) {
+          std::cout << event.size() << '\n';
+        });
+        SECTION("which is list-initialized with 2 elements")
+        {
+            Catch::RedirectedStdOut redirected_std_out{};
+            d.post<std::vector<int>>(10, 2);
+            auto out = Catch::trim(redirected_std_out.str());
+            CHECK(out == "2");
+        }
+        SECTION("which is initialized with 10 elements of value 2")
+        {
+            Catch::RedirectedStdOut redirected_std_out{};
+            d.post(std::vector<int>(10, 2));
+            auto out = Catch::trim(redirected_std_out.str());
+            REQUIRE(out == "10");
+        }
+    }
+}
+

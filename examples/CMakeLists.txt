@@ -12,3 +12,4 @@ include_directories(${COURIER_DIR}/include)
 set(COURIER_HEADER_FILE ${COURIER_DIR}/include/courier/courier.hpp)
 
 add_executable(example1 example1.cpp ${COURER_HEADER_FILE})
+add_executable(example2 example2.cpp ${COURER_HEADER_FILE})

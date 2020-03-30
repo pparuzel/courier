@@ -10,8 +10,8 @@ endif ()
 
 add_custom_command(OUTPUT Catch2/single_include
         COMMAND git submodule foreach git reset --hard
-        COMMAND git submodule update --init Catch2
-        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        COMMAND git submodule update --init -- ${CMAKE_CURRENT_SOURCE_DIR}/Catch2
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         COMMENT "Downloading Catch2 C++ tests framework"
         VERBATIM
         )

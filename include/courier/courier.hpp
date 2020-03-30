@@ -21,7 +21,7 @@ inline constexpr bool tuple_contains_type_v =
     tuple_contains_type<T, Tuple>::value;
 
 template <typename T>
-using callback_t = std::function<void(const T&)>;
+using callback_t = std::function<void(T&)>;
 
 template <typename T>
 using callback_ptr = std::unique_ptr<callback_t<T>>;
@@ -90,7 +90,7 @@ public:
                                                     decltype(event_senders_)>,
                       "Cannot register to an unspecified event");
         return get_poster<TEvent>().template add_listener(
-            [&](const TEvent& e) { (f.*MemberFunc)(e); });
+            [&](auto&& e) { (f.*MemberFunc)(std::forward<decltype(e)>(e)); });
     }
 
     template <typename TEvent>
@@ -103,10 +103,41 @@ public:
     }
 
     template <typename TEvent>
-    constexpr void post(const TEvent& event) const
+    constexpr void post(TEvent& event) const
     {
         if constexpr (detail::tuple_contains_type_v<poster<TEvent>,
                                                     decltype(event_senders_)>) {
+            get_poster<TEvent>().trigger(event);
+        } else {
+            std::cerr << "warning: a used type "
+#ifndef RTTI_DISABLED
+                      << "id '" << typeid(TEvent).name() << "' "
+#endif
+                      << "is not specified in the dispatcher." << std::endl;
+        }
+    }
+
+    template <typename TEvent>
+    constexpr void post(TEvent&& event) const
+    {
+        if constexpr (detail::tuple_contains_type_v<poster<TEvent>,
+                                                    decltype(event_senders_)>) {
+            get_poster<TEvent>().trigger(event);
+        } else {
+            std::cerr << "warning: a used type "
+#ifndef RTTI_DISABLED
+                      << "id '" << typeid(TEvent).name() << "' "
+#endif
+                      << "is not specified in the dispatcher." << std::endl;
+        }
+    }
+
+    template <typename TEvent, typename... Args>
+    constexpr void post(Args&&... args) const
+    {
+        if constexpr (detail::tuple_contains_type_v<poster<TEvent>,
+                                                    decltype(event_senders_)>) {
+            TEvent event{std::forward<Args>(args)...};
             get_poster<TEvent>().trigger(event);
         } else {
             std::cerr << "warning: a used type "

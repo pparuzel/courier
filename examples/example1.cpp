@@ -47,7 +47,7 @@ void on_atom_collision(const AtomCollision& e, Dispatcher& d)
 
     const auto [aposx, aposy] = e.first.position;
     const auto [bposx, bposy] = e.second.position;
-    const auto blast_force = std::powf(e.first.radius * e.second.radius, 2);
+    const auto blast_force = std::pow(e.first.radius * e.second.radius, 2.f);
     d.post(ExplosionEvent{
         .blast_force = blast_force,
         .position = Vec2{(aposx + bposx) / 2, (aposy + bposy) / 2},

@@ -92,7 +92,7 @@ int main()
     dispatcher.add<AtomCollision>(on_atom_collision_wrapper);
     dispatcher.add<ExplosionEvent>(&explode);
     auto wipeout_callback = dispatcher.add<WipeoutEvent, &World::wipeout>(w);
-    dispatcher.post(CollisionEvent{atom1, atom2});
-    dispatcher.post(Vec2{1, 2});
+    dispatcher.post<AtomCollision>(atom1, atom2);
+    dispatcher.post<Vec2>(1, 2);
     dispatcher.remove(wipeout_callback);
 }

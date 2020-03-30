@@ -1,5 +1,5 @@
 # Courier
-A simple event dispatcher written in Modern C++.
+A simple, lightweight event dispatcher written in Modern C++.
 
 ## Usage
 ```cpp
@@ -26,8 +26,8 @@ dispatcher.add<GoodbyeEvent>([](auto&& event) { std::cout << "Bye " << event.nam
 /* Send events */
 dispatcher.post<HelloEvent>();  // calls on_hello function and then prints "Hello!"
 dispatcher.post<GoodbyeEvent>("Joe");  // prints "Bye Joe"
-dispatcher.post<IgnoredEvent>();  // ignored because dispatcher does not know that event
-                                  // runtime warning is displayed
+dispatcher.post<IgnoredEvent>();  // ignored because dispatcher does not know IgnoredEvent
+                                  // also, runtime warning is displayed
 dispatcher.add<IgnoredEvent>();  // error: dispatcher cannot subscribe to an unspecified event
 ```
 
@@ -41,4 +41,14 @@ dispatcher.remove(some_event_handler);
 ```cpp
 Widget obj;
 dispatcher.add<SomeEvent, &Widget::foo>(obj);
+```
+
+# Compiling tests and examples
+### Requirements
+* CMake (tested on 3.15)
+* C++ compiler with support for C++2a
+
+```shell
+cmake -B build .
+make -C build -j12
 ```

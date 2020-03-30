@@ -1,21 +1,29 @@
-# Courier
+# courier
 
 [![Build status](https://github.com/reconndev/courier/workflows/build/badge.svg)](https://github.com/reconndev/courier/actions)
 
 A simple, lightweight event dispatcher written in Modern C++.
+It allows communication components through subscription and events. A function is attached to a particular event and once a user posts an event, all subscribed functions are called.
+
+Event dispatchers are particularly popular in game development. Physics engine send an event about a collision between two entities and users of the engine can subscribe, to handle this event however they want without coupling with the physics engine code. Events may contain mutable data, courier permits any type to be sent as long as it is registered in the dispatcher.
 
 ## Usage
 ```cpp
+
+/* Create some event classes */
 struct HelloEvent {
     // ...
 };
 
+/* Another event class */
 struct GoodbyeEvent {
     std::string name;
 };
 
+/* Dispatcher will not known this event for the sake of an example */
 struct IgnoredEvent {};
 
+/* This function will be attached to HelloEvent, later */
 void on_hello(HelloEvent& event) {
     // ...
 }
@@ -46,7 +54,7 @@ Widget obj;
 dispatcher.add<SomeEvent, &Widget::foo>(obj);
 ```
 
-# Compiling tests and examples
+## Compiling tests and examples
 ### Requirements
 * CMake (tested on 3.15)
 * C++ compiler with support for C++2a

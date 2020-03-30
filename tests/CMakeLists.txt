@@ -23,5 +23,5 @@ add_custom_target(DownloadCatch2 ALL
 include_directories(${COURIER_DIR}/include)
 include_directories(Catch2/single_include/catch2)
 
-add_executable(BasicFunctionalityTests basic_functionality.cpp)
-add_dependencies(BasicFunctionalityTests DownloadCatch2)
+add_executable(BasicTests basic.cpp)
+add_dependencies(BasicTests DownloadCatch2)

@@ -14,17 +14,17 @@ struct Event1 {
 };
 
 struct Event2 {
-    mutable std::size_t trigger_count = 0;
+    std::size_t trigger_count = 0;
 };
 
 struct Event3 {
-    mutable std::size_t trigger_count = 0;
+    std::size_t trigger_count = 0;
 };
 
 struct Event4 : Event2 {
 };
 
-void foo(const Event2& e)
+void foo(Event2& e)
 {
     ++e.trigger_count;
 }
@@ -79,7 +79,7 @@ TEST_CASE("Basic functionality", "[basic]")
             value *= multiplier;
         });
         REQUIRE(value == 4);
-        dispatcher.post(Event1{1, 2, 3});
+        dispatcher.post<Event1>(1, 2, 3);
         REQUIRE(value == 1234 * 4);
     }
     SECTION("assigning an event to a lambda")
@@ -88,7 +88,7 @@ TEST_CASE("Basic functionality", "[basic]")
         auto&& cb =
             dispatcher.add<Event1>([&](auto&&...) { event_triggered = true; });
         REQUIRE(!event_triggered);
-        dispatcher.post(Event1{0, 0});
+        dispatcher.post<Event1>(0, 0);
         REQUIRE(event_triggered);
 
         SECTION("then removing and posting an event")
@@ -96,7 +96,7 @@ TEST_CASE("Basic functionality", "[basic]")
             event_triggered = false;
             dispatcher.remove(cb);
             REQUIRE(!event_triggered);
-            dispatcher.post(Event1{0, 0});
+            dispatcher.post<Event1>(0, 0);
             REQUIRE(!event_triggered);
         }
     }
@@ -110,14 +110,14 @@ TEST_CASE("Basic functionality", "[basic]")
             SECTION("that is inheriting from a specified event")
             {
                 Catch::RedirectedStdErr redirected_std_err{};
-                dispatcher.post(Event4{});
+                dispatcher.post<Event4>();
                 REQUIRE(!events_triggered[0]);
                 REQUIRE(!events_triggered[1]);
                 CHECK_THAT(redirected_std_err.str(),
                            Catch::Matchers::StartsWith("warning"));
             }
             Catch::RedirectedStdErr redirected_std_err{};
-            dispatcher.post(Event3{});
+            dispatcher.post<Event3>();
             REQUIRE(!events_triggered[0]);
             REQUIRE(!events_triggered[1]);
             CHECK_THAT(redirected_std_err.str(),
@@ -127,7 +127,7 @@ TEST_CASE("Basic functionality", "[basic]")
         {
             REQUIRE(!events_triggered[0]);
             REQUIRE(!events_triggered[1]);
-            dispatcher.post(Event2{});
+            dispatcher.post<Event2>();
             REQUIRE(!events_triggered[0]);
             REQUIRE(events_triggered[1]);
         }
@@ -135,8 +135,8 @@ TEST_CASE("Basic functionality", "[basic]")
         {
             REQUIRE(!events_triggered[0]);
             REQUIRE(!events_triggered[1]);
-            dispatcher.post(Event2{});
-            dispatcher.post(Event1{});
+            dispatcher.post<Event2>();
+            dispatcher.post<Event1>();
             REQUIRE(events_triggered[0]);
             REQUIRE(events_triggered[1]);
         }
@@ -150,22 +150,26 @@ TEST_CASE("Basic functionality", "[basic]")
                     [&](auto&&...) { events_triggered[1] = true; });
                 REQUIRE(!events_triggered[0]);
                 REQUIRE(!events_triggered[1]);
-                dispatcher.post(Event1{0, 1});
+                dispatcher.post<Event1>(0, 1);
                 REQUIRE(events_triggered[0]);
                 REQUIRE(events_triggered[1]);
             }
             SECTION("and checking if data is correct")
             {
                 using summations = std::pair<std::pair<int, int>, int>;
-                std::vector<summations> vs = {
-                    {{14, 7}, 21}, {{4, 5}, 9},      {{2, 0}, 2},
-                    {{0, 7}, 7},   {{80, 170}, 250},
-                };
-                dispatcher.add<Event1>(
-                    [](const Event1& e) { CHECK(e.i + e.j == e.k); });
+                std::vector<summations> vs;
+                vs.emplace_back(std::make_pair(14, 7), 21);
+                vs.emplace_back(std::make_pair(4, 5), 9);
+                vs.emplace_back(std::make_pair(2, 0), 2);
+                vs.emplace_back(std::make_pair(0, 7), 7);
+                vs.emplace_back(std::make_pair(80, 170), 250);
+                dispatcher.add<Event1>([](const Event1& e) {
+                    // Check summations are correctly passed
+                    CHECK(e.i + e.j == e.k);
+                });
                 for (auto&& [operands, result] : as_const(vs)) {
-                    dispatcher.post(
-                        Event1{operands.first, operands.second, result});
+                    dispatcher.post<Event1>(operands.first, operands.second,
+                                            result);
                 }
             }
         }

@@ -6,9 +6,9 @@ name: CI
 # events but only for the master branch
 on:
   push:
-    branches: [ master ]
+    branches: [ master, test-ci ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, test-ci ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -22,10 +22,13 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
+    - name: Install gcc 9
+      run: sudo apt install gcc-9
+
     # Runs a single command using the runners shell
     - name: Build with CMake
       run: |
-        cmake -B build .
+        cmake -B build -DCMAKE_C_COMPILER=$(which gcc-9) -DCMAKE_CXX_COMPILER=$(which g++-9) .
         make -C build
 
 #     # Runs a set of commands using the runners shell

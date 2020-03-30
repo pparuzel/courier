@@ -48,12 +48,11 @@ void on_atom_collision(const AtomCollision& e, Dispatcher& d)
     const auto [aposx, aposy] = e.first.position;
     const auto [bposx, bposy] = e.second.position;
     const auto blast_force = std::pow(e.first.radius * e.second.radius, 2.f);
-    d.post(ExplosionEvent{
-        .blast_force = blast_force,
-        .position = Vec2{(aposx + bposx) / 2, (aposy + bposy) / 2},
-    });
+    const auto position = Vec2{(aposx + bposx) / 2, (aposy + bposy) / 2};
+    d.post(ExplosionEvent{blast_force, position});
     if (blast_force > 10'000) {
-        d.post(WipeoutEvent{.destruction_rate = blast_force / 1e8f});
+        auto destruction_rate = blast_force / 1e8f;
+        d.post(WipeoutEvent{destruction_rate});
     }
 }
 
@@ -85,8 +84,8 @@ int main()
     auto on_atom_collision_wrapper = [&dispatcher](auto&& e) {
         return on_atom_collision(e, dispatcher);
     };
-    Atom atom1{.position = {130, 150}, .radius = 62.5};
-    Atom atom2{.position = {120, 160}, .radius = 200};
+    Atom atom1{{130, 150}, 62.5};
+    Atom atom2{{120, 160}, 200};
     World w;
 
     dispatcher.add<AtomCollision>(on_atom_collision_wrapper);

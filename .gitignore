@@ -4,3 +4,7 @@ cmake-*/
 
 # MacOS
 .DS_Store
+
+# Build directories
+build/
+build-*/

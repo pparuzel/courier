@@ -1,4 +1,7 @@
 # Courier
+
+[![Build status](https://github.com/reconndev/courier/workflows/build/badge.svg)](https://github.com/reconndev/courier/actions)
+
 A simple, lightweight event dispatcher written in Modern C++.
 
 ## Usage

@@ -20,9 +20,11 @@ target_include_directories(Courier INTERFACE ${COURIER_INCLUDE_DIR})
 
 # Define test executables
 add_executable(BasicTests basic.cpp)
+add_executable(Benchmark benchmark/benchmark.cpp)
 
 # Linking stage
 target_link_libraries(BasicTests Catch Courier)
+target_link_libraries(Benchmark Catch Courier)
 
 # Make sure Catch2 is pre-downloaded
 add_custom_command(OUTPUT Catch2/single_include

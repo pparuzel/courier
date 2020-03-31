@@ -8,6 +8,23 @@ if (NOT DEFINED COURIER_DIR)
     message(WARNING "CMake variable COURIER_DIR is not defined")
 endif ()
 
+# Add Catch2 library
+set(CATCH_INCLUDE_DIR Catch2/single_include/catch2)
+add_library(Catch INTERFACE)
+target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})
+
+# Add courier library
+set(COURIER_INCLUDE_DIR ${COURIER_DIR}/include)
+add_library(Courier INTERFACE)
+target_include_directories(Courier INTERFACE ${COURIER_INCLUDE_DIR})
+
+# Define test executables
+add_executable(BasicTests basic.cpp)
+
+# Linking stage
+target_link_libraries(BasicTests Catch Courier)
+
+# Make sure Catch2 is pre-downloaded
 add_custom_command(OUTPUT Catch2/single_include
         COMMAND git submodule foreach git reset --hard
         COMMAND git submodule update --init -- ${CMAKE_CURRENT_SOURCE_DIR}/Catch2
@@ -15,13 +32,7 @@ add_custom_command(OUTPUT Catch2/single_include
         COMMENT "Downloading Catch2 C++ tests framework"
         VERBATIM
         )
-
 add_custom_target(DownloadCatch2 ALL
         DEPENDS Catch2/single_include
         )
-
-include_directories(${COURIER_DIR}/include)
-include_directories(Catch2/single_include/catch2)
-
-add_executable(BasicTests basic.cpp)
-add_dependencies(BasicTests DownloadCatch2)
+add_dependencies(Catch DownloadCatch2)

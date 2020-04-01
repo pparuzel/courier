@@ -8,28 +8,36 @@ It allows communication between components through subscription and events. A fu
 Event dispatchers are particularly popular in game development. Usually, physics engines send events about collisions between entities so that the users of the engine can subscribe, to handle them however they want without coupling game code with the physics engine code. Events may contain mutable data. `courier` permits any type to be sent as long as it is registered in the dispatcher.
 
 ## Benchmark
+
+### Compilation options
+`courier` and other programs were compiled with `-O3` to squeeze out the best out of the optimizer.
+
 ### EnTT vs courier
 
 Results were **rounded** to the 5th decimal place. Times are represented in **seconds**.
 
 #### Three events (max sizeof = 4 bytes) sent thousands of times
 
-| Iterations | Mean time | Std Dev  | Mean time (EnTT) | Std Dev (EnTT) |
-| ---------: |:---------:| :-------:| :--------------: | :-------------:|
-| 20k        | 0.00002s  | 0.00000s | 0.00023s         | 0.00006s       |
-| 50k        | 0.00005s  | 0.00000s | 0.00052s         | 0.00006s       |
-| 100k       | 0.00009s  | 0.00002s | 0.00105s         | 0.00013s       |
-| 200k       | 0.00018s  | 0.00002s | 0.00211s         | 0.00020s       |
-| 500k       | 0.00046s  | 0.00009s | 0.00528s         | 0.00031s       |
+| Iterations | Mean time `courier`  | Mean time `EnTT` | Std Dev `courier` | Std Dev `EnTT` |
+| ---------: |:--------------------:| :---------------:| :--------------:  | :-------------:|
+| 20k        | 0.00002s             | 0.00023s         | 0.00000s          | 0.00006s       |
+| 50k        | 0.00005s             | 0.00052s         | 0.00000s          | 0.00006s       |
+| 100k       | 0.00009s             | 0.00105s         | 0.00002s          | 0.00013s       |
+| 200k       | 0.00018s             | 0.00211s         | 0.00002s          | 0.00020s       |
+| 500k       | 0.00046s             | 0.00528s         | 0.00009s          | 0.00031s       |
+
+This shows about **10x improvement** over EnTT for small events.
 
 #### Three events (max sizeof = 80 bytes) sent thousands of times
-| Iterations | Mean time | Std Dev  | Mean time (EnTT) | Std Dev (EnTT) |
-| ---------: |:---------:| :-------:| :--------------: | :------------: |
-| 20k        | 0.00013s  | 0.00002s | 0.00034s         | 0.00004s       |
-| 50k        | 0.00032s  | 0.00002s | 0.00081s         | 0.00008s       |
-| 100k       | 0.00069s  | 0.00014s | 0.00172s         | 0.00009s       |
-| 200k       | 0.00138s  | 0.00019s | 0.00342s         | 0.00030s       |
-| 500k       | 0.00364s  | 0.00054s | 0.00901s         | 0.00058s       |
+| Iterations | Mean time `courier` | Mean time `EnTT` | Std Dev `courier` | Std Dev `EnTT` |
+| ---------: |:-------------------:| :---------------:| :---------------: | :------------: |
+| 20k        | 0.00013s            | 0.00034s         | 0.00002s          | 0.00004s       |
+| 50k        | 0.00032s            | 0.00081s         | 0.00002s          | 0.00008s       |
+| 100k       | 0.00069s            | 0.00172s         | 0.00014s          | 0.00009s       |
+| 200k       | 0.00138s            | 0.00342s         | 0.00019s          | 0.00030s       |
+| 500k       | 0.00364s            | 0.00901s         | 0.00054s          | 0.00058s       |
+
+This shows about **2.5x improvement** over EnTT for large events.
 
 ## Tested on compilers
 * Linux CentOS x86-64, clang version 5.0.1
@@ -92,7 +100,7 @@ dispatcher.add<SomeEvent, &Widget::foo>(obj);
 
 ### Steps
 ```shell
-cmake -B build .
+cmake -B build . -DCMAKE_BUILD_TYPE=Release
 make -C build -j12
 ```
 ## License

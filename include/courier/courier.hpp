@@ -45,10 +45,16 @@ public:
             .get();
     }
 
-    constexpr void remove_listener(detail::callback_t<TEvent>* ptr) noexcept
+    constexpr std::size_t remove_listener(
+        detail::callback_t<TEvent>* ptr) noexcept
     {
-        listeners_.remove_if(
-            [ptr](const auto& callback) { return ptr == callback.get(); });
+        std::size_t removed{};
+        listeners_.remove_if([ptr, &removed](const auto& callback) {
+            const auto should_remove = (ptr == callback.get());
+            removed += should_remove;
+            return should_remove;
+        });
+        return removed;
     }
 
     template <typename... Args>
@@ -57,6 +63,16 @@ public:
         for (auto&& listener : std::as_const(listeners_)) {
             (*listener)(std::forward<Args>(args)...);
         }
+    }
+
+    std::size_t clear() noexcept
+    {
+        std::size_t removed{};
+        listeners_.remove_if([&removed](auto&&...) {
+          ++removed;
+          return true;
+        });
+        return removed;
     }
 
 private:
@@ -79,6 +95,7 @@ public:
         static_assert(detail::tuple_contains_type_v<poster<TEvent>,
                                                     decltype(event_senders_)>,
                       "Cannot register to an unspecified event");
+        ++size_;
         return get_poster<TEvent>().template add_listener<F>(
             std::forward<F>(func));
     }
@@ -89,6 +106,7 @@ public:
         static_assert(detail::tuple_contains_type_v<poster<TEvent>,
                                                     decltype(event_senders_)>,
                       "Cannot register to an unspecified event");
+        ++size_;
         return get_poster<TEvent>().template add_listener(
             [&](auto&& e) { (f.*MemberFunc)(std::forward<decltype(e)>(e)); });
     }
@@ -99,7 +117,7 @@ public:
         static_assert(detail::tuple_contains_type_v<poster<TEvent>,
                                                     decltype(event_senders_)>,
                       "Cannot remove an unspecified event");
-        get_poster<TEvent>().remove_listener(ptr);
+        size_ -= get_poster<TEvent>().remove_listener(ptr);
     }
 
     template <typename TEvent>
@@ -148,6 +166,22 @@ public:
         }
     }
 
+    void clear() noexcept
+    {
+        std::apply([](auto&&... poster) { (poster.clear(), ...); },
+                   event_senders_);
+        size_ = 0;
+    }
+
+    template <typename TEvent>
+    void clear() noexcept
+    {
+        size_ -= get_poster<TEvent>().clear();
+    }
+
+    [[nodiscard]] std::size_t size() const noexcept { return size_; }
+    [[nodiscard]] bool empty() const noexcept { return size_ == 0; }
+
 private:
     template <typename TEvent>
     constexpr const auto& get_poster() const noexcept
@@ -164,6 +198,7 @@ private:
 
 private:
     std::tuple<poster<E>...> event_senders_{};
+    std::size_t size_{};
 };
 
 template <typename... E>

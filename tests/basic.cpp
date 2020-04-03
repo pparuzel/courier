@@ -181,7 +181,7 @@ TEST_CASE("Basic functionality", "[basic]")
 }
 
 ///
-/// Construction tests
+/// Construction and destruction tests
 ///
 
 TEST_CASE("Construction tests", "[basic]")
@@ -189,9 +189,8 @@ TEST_CASE("Construction tests", "[basic]")
     SECTION("contruct dispatcher with a std::vector")
     {
         courier::dispatcher<std::vector<int>> d;
-        d.add<std::vector<int>>([](auto&& event) {
-          std::cout << event.size() << '\n';
-        });
+        d.add<std::vector<int>>(
+            [](auto&& event) { std::cout << event.size() << '\n'; });
         SECTION("which is list-initialized with 2 elements")
         {
             Catch::RedirectedStdOut redirected_std_out{};
@@ -209,3 +208,42 @@ TEST_CASE("Construction tests", "[basic]")
     }
 }
 
+TEST_CASE("Destruction tests", "[basic]")
+{
+    SECTION("construct a two-event dispatcher")
+    {
+        courier::dispatcher<Event1, Event2> d;
+        for (int i = 0; i < 10'000; ++i) {
+            d.add<Event1>([](auto&&...) {});
+            d.add<Event2>([](auto&&...) {});
+        }
+        d.add<Event2>([](auto&&...) {});
+        const auto event1_count = 10'000;
+        const auto event2_count = 10'001;
+        REQUIRE(d.size() == event1_count + event2_count);
+        SECTION("post a lot of events")
+        {
+            for (int i = 0; i < 100; ++i) {
+                d.post<Event1>(i, i + 1, i + 2);
+                d.post<Event2>(static_cast<std::size_t>(i + 3));
+            }
+            REQUIRE(d.size() == event1_count + event2_count);
+            SECTION("and remove all Event1")
+            {
+                d.clear<Event1>();
+                REQUIRE(d.size() == event2_count);
+            }
+            SECTION("and remove all Event2")
+            {
+                d.clear<Event2>();
+                REQUIRE(d.size() == event1_count);
+            }
+            SECTION("and remove all events")
+            {
+                d.clear();
+                REQUIRE(d.size() == 0);
+                REQUIRE(d.empty());
+            }
+        }
+    }
+}

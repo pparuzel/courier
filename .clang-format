@@ -3,4 +3,6 @@ BasedOnStyle: Chromium
 IndentWidth: 4
 AccessModifierOffset: -4
 BreakBeforeBraces: Linux
+BreakConstructorInitializers: BeforeComma
+AlwaysBreakBeforeMultilineStrings: false
 ...

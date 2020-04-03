@@ -6,7 +6,8 @@ on:
   push:
     branches: [ master, test-ci ]
   pull_request:
-    branches: '*'
+    branches:
+      - 'master'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -24,4 +25,13 @@ jobs:
     - name: Build with CMake
       run: |
         cmake -B build -DCMAKE_C_COMPILER=$(which gcc-9) -DCMAKE_CXX_COMPILER=$(which g++-9) -DCMAKE_BUILD_TYPE=Release .
-        make -C build
+        make -C build -j8
+
+  windows-build:
+    runs-on: [windows-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build on Windows
+      run: |
+        cmake -T "ClangCl" --config Release -B build .
+        cmake --build build

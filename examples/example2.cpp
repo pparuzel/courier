@@ -2,6 +2,7 @@
 #include <functional>
 #include <iostream>
 #include <thread>
+#include <string>
 
 #include "courier/courier.hpp"
 

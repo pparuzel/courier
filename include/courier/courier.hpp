@@ -26,10 +26,6 @@ using callback_t = std::function<void(T&)>;
 template <typename T>
 using callback_ptr = std::unique_ptr<callback_t<T>>;
 
-}  // namespace courier::detail
-
-namespace courier
-{
 template <typename TEvent>
 class poster
 {
@@ -40,8 +36,8 @@ public:
     constexpr auto add_listener(F&& func) noexcept
     {
         return listeners_
-            .emplace_front(std::make_unique<detail::callback_t<TEvent>>(
-                std::forward<F>(func)))
+            .emplace_front(
+                std::make_unique<callback_t<TEvent>>(std::forward<F>(func)))
             .get();
     }
 
@@ -69,8 +65,8 @@ public:
     {
         std::size_t removed{};
         listeners_.remove_if([&removed](auto&&...) {
-          ++removed;
-          return true;
+            ++removed;
+            return true;
         });
         return removed;
     }
@@ -92,9 +88,9 @@ public:
     template <typename TEvent, typename F>
     constexpr decltype(auto) add(F&& func) noexcept
     {
-        static_assert(detail::tuple_contains_type_v<poster<TEvent>,
-                                                    decltype(event_senders_)>,
-                      "Cannot register to an unspecified event");
+        static_assert(
+            tuple_contains_type_v<poster<TEvent>, decltype(event_senders_)>,
+            "Cannot register to an unspecified event");
         ++size_;
         return get_poster<TEvent>().template add_listener<F>(
             std::forward<F>(func));
@@ -103,9 +99,9 @@ public:
     template <typename TEvent, auto MemberFunc, typename Object>
     constexpr decltype(auto) add(Object&& f) noexcept
     {
-        static_assert(detail::tuple_contains_type_v<poster<TEvent>,
-                                                    decltype(event_senders_)>,
-                      "Cannot register to an unspecified event");
+        static_assert(
+            tuple_contains_type_v<poster<TEvent>, decltype(event_senders_)>,
+            "Cannot register to an unspecified event");
         ++size_;
         return get_poster<TEvent>().template add_listener(
             [&](auto&& e) { (f.*MemberFunc)(std::forward<decltype(e)>(e)); });
@@ -114,7 +110,7 @@ public:
     template <typename TEvent>
     constexpr void remove(detail::callback_t<TEvent>* ptr) noexcept
     {
-        static_assert(detail::tuple_contains_type_v<poster<TEvent>,
+        static_assert(detail::tuple_contains_type_v<detail::poster<TEvent>,
                                                     decltype(event_senders_)>,
                       "Cannot remove an unspecified event");
         size_ -= get_poster<TEvent>().remove_listener(ptr);
@@ -123,7 +119,7 @@ public:
     template <typename TEvent>
     constexpr void post(TEvent& event) const
     {
-        if constexpr (detail::tuple_contains_type_v<poster<TEvent>,
+        if constexpr (detail::tuple_contains_type_v<detail::poster<TEvent>,
                                                     decltype(event_senders_)>) {
             get_poster<TEvent>().trigger(event);
         } else {
@@ -138,7 +134,7 @@ public:
     template <typename TEvent>
     constexpr void post(TEvent&& event) const
     {
-        if constexpr (detail::tuple_contains_type_v<poster<TEvent>,
+        if constexpr (detail::tuple_contains_type_v<detail::poster<TEvent>,
                                                     decltype(event_senders_)>) {
             get_poster<TEvent>().trigger(event);
         } else {
@@ -153,7 +149,7 @@ public:
     template <typename TEvent, typename... Args>
     constexpr void post(Args&&... args) const
     {
-        if constexpr (detail::tuple_contains_type_v<poster<TEvent>,
+        if constexpr (detail::tuple_contains_type_v<detail::poster<TEvent>,
                                                     decltype(event_senders_)>) {
             TEvent event{std::forward<Args>(args)...};
             get_poster<TEvent>().trigger(event);
@@ -186,28 +182,31 @@ private:
     template <typename TEvent>
     constexpr const auto& get_poster() const noexcept
     {
-        return std::get<poster<TEvent>>(event_senders_);
+        return std::get<detail::poster<TEvent>>(event_senders_);
     }
 
     template <typename TEvent>
     constexpr auto& get_poster() noexcept
     {
-        return const_cast<poster<TEvent>&>(
+        return const_cast<detail::poster<TEvent>&>(
             std::as_const(*this).template get_poster<TEvent>());
     }
 
 private:
-    std::tuple<poster<E>...> event_senders_{};
+    std::tuple<detail::poster<E>...> event_senders_{};
     std::size_t size_{};
 };
+}  // namespace courier::detail
 
+namespace courier
+{
 template <typename... E>
-class dispatcher : public dispatcher_impl<E...>
+class dispatcher : public detail::dispatcher_impl<E...>
 {
 };
 
 template <typename... E>
-class dispatcher<std::tuple<E...>> : public dispatcher_impl<E...>
+class dispatcher<std::tuple<E...>> : public detail::dispatcher_impl<E...>
 {
 };
 

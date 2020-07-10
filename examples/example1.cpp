@@ -15,6 +15,8 @@ struct Vec2 {
 };
 
 struct Atom {
+    // Let's not assume quantum mechanics...
+    // we'll go with an atom always having a position
     Vec2 position;
     float radius;
 };

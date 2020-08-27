@@ -5,4 +5,7 @@ AccessModifierOffset: -4
 BreakBeforeBraces: Linux
 BreakConstructorInitializers: BeforeComma
 AlwaysBreakBeforeMultilineStrings: false
+ColumnLimit: 95
+AllowShortFunctionsOnASingleLine: None
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
 ...

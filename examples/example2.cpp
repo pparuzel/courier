@@ -1,8 +1,9 @@
 #include <atomic>
 #include <functional>
 #include <iostream>
-#include <thread>
+#include <memory>
 #include <string>
+#include <thread>
 
 #include "courier/courier.hpp"
 
@@ -47,7 +48,8 @@ public:
         c.add<RopeIsNearEvent>([this](auto&&... event) {
             if (not in_air) {
                 get_courier().post<GameOverEvent>(
-                    "Player has not jumped :(\n> Press ENTER to quit");
+                    "Player has not jumped :(\n"
+                    "> Press ENTER to quit");
             }
         });
         c.add<GameOverEvent>([this](auto&&...) { last_user_input_ = "q"; });
@@ -99,11 +101,16 @@ public:
         std::cout << "START! Skip over the skipping rope!" << std::endl;
         std::thread([this]() {
             auto&& c = get_courier();
-            auto keep_rolling = true;
+            auto keep_rolling = std::make_shared<bool>(true);
             // Stop this thread on game-over
             // Unnecessary here, but suppresses the warning of an endless loop
-            c.add<GameOverEvent>([&](auto&&...) { keep_rolling = false; });
-            while (keep_rolling) {
+            c.add<GameOverEvent>(
+                [&, keep_rolling_wptr = std::weak_ptr<bool>{keep_rolling}](auto&&...) {
+                    if (keep_rolling_wptr.lock()) {
+                        *keep_rolling = false;
+                    }
+                });
+            while (*keep_rolling) {
                 std::this_thread::sleep_for(full_cycle_time_ms / 2);
                 std::cout << "JUMP NOW!" << std::endl;
                 std::this_thread::sleep_for(full_cycle_time_ms / 2);
